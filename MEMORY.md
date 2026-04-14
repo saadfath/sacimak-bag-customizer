@@ -1,10 +1,18 @@
 # SACIMAK — Project Memory
 
-**Last Updated:** 2026-04-06 (All components complete)
+**Last Updated:** 2026-04-14 (Design refresh)
 
 ## Current Project State
 
 ### ✅ ALL STEPS COMPLETE — Full Application Built
+
+### ✅ 2026-04-14 UI/UX Refresh
+- ✅ Enhanced premium visual identity with layered gradients, glassmorphism cards, and refined spacing
+- ✅ Redesigned Navbar with sticky blur, branded lockup, and pill navigation
+- ✅ Upgraded Home hero with stronger typography, CTA hierarchy, and polished bag selector cards
+- ✅ Improved BagViewer styling with viewer badges, floating model motion, and contact shadows
+- ✅ Refined Customizer, OrderForm, and Dashboard for cleaner controls and more luxurious presentation
+- ✅ Added date filtering in admin dashboard (all time / today / last 7 days)
 
 #### Zustand Store Schema (Implemented)
 ```javascript
@@ -67,3 +75,8 @@
 ### All JSDoc Comments Added ✅
 - Every function, component, hook, and prop documented
 - Full inline documentation throughout codebase
+
+### ✅ 2026-04-14 UI Kit Alignment (Stitch Digital Atelier)
+- Updated global design tokens to a light editorial system (Noto Serif + Manrope, sacimak-primary/surface/container tokens).
+- Remade Navbar, Home hero, bag selectors, Customizer controls, OrderForm, BagViewer frame, and Dashboard surfaces to match the provided UI kit language.
+- Dashboard page now follows atelier-management structure with left rail and soft card hierarchy while preserving all existing order logic/state.

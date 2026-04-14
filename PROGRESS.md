@@ -65,3 +65,7 @@
 - ✅ Design system fully applied (Tailwind + custom tokens)
 - ✅ 3D viewer working with live updates
 - ✅ Ready for production build and testing
+
+## 2026-04-14
+- ✅ UI polish pass — upgraded navbar, hero, 3D viewer, customizer, order form, and dashboard to a more premium luxury look with improved layout and filters.
+- ✅ UI kit remap — rebuilt SACIMAK UI/UX to match `/ui/stitch_sakimak_bag_customizer_ui` visual language (light surfaces, editorial typography, gradient actions, atelier dashboard layout).

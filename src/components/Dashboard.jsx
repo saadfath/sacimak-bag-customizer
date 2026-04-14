@@ -1,263 +1,195 @@
 import { useState } from 'react';
 import useOrderStore from '../store/useOrderStore';
 
+const ORDER_FILTERS = ['all', 'tote', 'clutch', 'pending', 'confirmed', 'completed'];
+const DATE_FILTERS = ['all time', 'today', 'last 7 days'];
+
 /**
- * Admin dashboard component
- * Displays order management table with stats and filters
+ * Admin dashboard component.
+ * Displays order stats and a premium order management table.
+ * @returns {JSX.Element} Dashboard layout with filters and table.
  */
 export default function Dashboard() {
   const { orders, updateOrderStatus } = useOrderStore();
-  const [filter, setFilter] = useState('all');
+  const [orderFilter, setOrderFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all time');
 
   /**
-   * Calculates order statistics
-   * @returns {Object} Stats object with total, pending, confirmed, completed counts
+   * Computes dashboard stat card values.
+   * @returns {{title: string, value: number, color: string}[]} Stat card data.
    */
-  const getStats = () => {
-    return {
-      total: orders.length,
-      pending: orders.filter((o) => o.status === 'pending').length,
-      confirmed: orders.filter((o) => o.status === 'confirmed').length,
-      completed: orders.filter((o) => o.status === 'completed').length,
-    };
+  const getStats = () => [
+    { title: 'Total Orders', value: orders.length, color: 'text-sacimak-primary' },
+    { title: 'Pending', value: orders.filter((order) => order.status === 'pending').length, color: 'text-yellow-700' },
+    { title: 'Confirmed', value: orders.filter((order) => order.status === 'confirmed').length, color: 'text-cyan-700' },
+    { title: 'Completed', value: orders.filter((order) => order.status === 'completed').length, color: 'text-emerald-700' },
+  ];
+
+  /**
+   * Checks if order timestamp matches selected date filter.
+   * @param {string} timestamp - ISO order timestamp.
+   * @returns {boolean} True when order should be included.
+   */
+  const matchesDateFilter = (timestamp) => {
+    if (dateFilter === 'all time') return true;
+    const createdAt = new Date(timestamp).getTime();
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    return dateFilter === 'today' ? now - createdAt <= day : now - createdAt <= 7 * day;
   };
 
   /**
-   * Filters orders based on selected filter
-   * @returns {Array} Filtered orders array
+   * Returns filtered orders for current filter controls.
+   * @returns {Array<Object>} Visible orders.
    */
-  const getFilteredOrders = () => {
-    if (filter === 'all') return orders;
-    return orders.filter((order) =>
-      filter === 'tote'
-        ? order.bagType === 'tote'
-        : filter === 'clutch'
-        ? order.bagType === 'clutch'
-        : order.status === filter
-    );
-  };
+  const getFilteredOrders = () =>
+    orders.filter((order) => {
+      const matchesOrderType =
+        orderFilter === 'all' ||
+        (orderFilter === 'tote' && order.bagType === 'tote') ||
+        (orderFilter === 'clutch' && order.bagType === 'clutch') ||
+        order.status === orderFilter;
+      return matchesOrderType && matchesDateFilter(order.timestamp);
+    });
 
   /**
-   * Formats timestamp to readable date
-   * @param {string} timestamp - ISO timestamp
-   * @returns {string} Formatted date string
+   * Formats order timestamp for table display.
+   * @param {string} timestamp - ISO timestamp.
+   * @returns {string} Formatted human-readable date.
    */
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
+  const formatDate = (timestamp) =>
+    new Date(timestamp).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
 
   /**
-   * Returns status badge styling
-   * @param {string} status - Order status
-   * @returns {string} Tailwind classes for badge
+   * Resolves classes for status selector.
+   * @param {'pending' | 'confirmed' | 'completed'} status - Order status.
+   * @returns {string} Tailwind classes for status style.
    */
-  const getStatusBadge = (status) => {
-    const badges = {
-      pending: 'bg-yellow-900/30 text-yellow-400 border-yellow-500',
-      confirmed: 'bg-blue-900/30 text-blue-400 border-blue-500',
-      completed: 'bg-green-900/30 text-green-400 border-green-500',
-    };
-    return badges[status] || badges.pending;
-  };
+  const getStatusStyle = (status) =>
+    ({
+      pending: 'border-yellow-600/35 bg-yellow-100 text-yellow-800',
+      confirmed: 'border-cyan-600/35 bg-cyan-100 text-cyan-800',
+      completed: 'border-emerald-600/35 bg-emerald-100 text-emerald-800',
+    })[status] || 'border-stone-300 bg-white text-sacimak-variant';
 
   const stats = getStats();
   const filteredOrders = getFilteredOrders();
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-zinc-800 rounded-2xl shadow-xl p-6 border-2 border-amber-500/30">
-          <div className="text-3xl font-bold text-amber-400">
-            {stats.total}
-          </div>
-          <div className="text-sm text-zinc-400 mt-1">Total Orders</div>
-        </div>
-        <div className="bg-zinc-800 rounded-2xl shadow-xl p-6 border-2 border-yellow-500/30">
-          <div className="text-3xl font-bold text-yellow-400">
-            {stats.pending}
-          </div>
-          <div className="text-sm text-zinc-400 mt-1">Pending</div>
-        </div>
-        <div className="bg-zinc-800 rounded-2xl shadow-xl p-6 border-2 border-blue-500/30">
-          <div className="text-3xl font-bold text-blue-400">
-            {stats.confirmed}
-          </div>
-          <div className="text-sm text-zinc-400 mt-1">Confirmed</div>
-        </div>
-        <div className="bg-zinc-800 rounded-2xl shadow-xl p-6 border-2 border-green-500/30">
-          <div className="text-3xl font-bold text-green-400">
-            {stats.completed}
-          </div>
-          <div className="text-sm text-zinc-400 mt-1">Completed</div>
-        </div>
-      </div>
+      <section className="grid gap-4 md:grid-cols-4">
+        {stats.map((stat) => (
+          <article
+            key={stat.title}
+            className="rounded-2xl border border-stone-200 bg-white/80 p-5 shadow-[0_14px_28px_rgba(28,27,27,0.08)]"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sacimak-variant">{stat.title}</p>
+            <p className={`mt-2 text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+          </article>
+        ))}
+      </section>
 
-      {/* Filter Bar */}
-      <div className="bg-zinc-800 rounded-2xl shadow-xl p-4">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              filter === 'all'
-                ? 'bg-amber-500 text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-700'
-            }`}
-          >
-            All Orders
-          </button>
-          <button
-            onClick={() => setFilter('tote')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              filter === 'tote'
-                ? 'bg-amber-500 text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-700'
-            }`}
-          >
-            Tote Bags
-          </button>
-          <button
-            onClick={() => setFilter('clutch')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              filter === 'clutch'
-                ? 'bg-amber-500 text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-700'
-            }`}
-          >
-            Clutch Bags
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              filter === 'pending'
-                ? 'bg-amber-500 text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-700'
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setFilter('confirmed')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              filter === 'confirmed'
-                ? 'bg-amber-500 text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-700'
-            }`}
-          >
-            Confirmed
-          </button>
-          <button
-            onClick={() => setFilter('completed')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              filter === 'completed'
-                ? 'bg-amber-500 text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-700'
-            }`}
-          >
-            Completed
-          </button>
+      <section className="rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-[0_14px_28px_rgba(28,27,27,0.08)]">
+        <div className="space-y-4">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sacimak-variant">Bag / Status</p>
+            <div className="flex flex-wrap gap-2">
+              {ORDER_FILTERS.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setOrderFilter(filter)}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                    orderFilter === filter
+                      ? 'bg-gradient-to-r from-sacimak-primary to-sacimak-primary-container text-white'
+                      : 'border border-stone-300 bg-white text-sacimak-variant hover:border-sacimak-secondary/60'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sacimak-variant">Date</p>
+            <div className="flex flex-wrap gap-2">
+              {DATE_FILTERS.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setDateFilter(filter)}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                    dateFilter === filter
+                      ? 'bg-gradient-to-r from-sacimak-secondary to-cyan-500 text-white'
+                      : 'border border-stone-300 bg-white text-sacimak-variant hover:border-sacimak-secondary/60'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Orders Table */}
-      <div className="bg-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+      <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white/80 shadow-[0_14px_28px_rgba(28,27,27,0.08)]">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-zinc-900 border-b-2 border-amber-500">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Order ID
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Customer
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Bag Type
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Config
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Qty
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-amber-400">
-                  Status
-                </th>
+          <table className="w-full min-w-[980px] text-sm">
+            <thead className="border-b border-stone-200 bg-stone-100/80">
+              <tr className="text-left text-xs uppercase tracking-[0.15em] text-sacimak-variant">
+                <th className="px-5 py-4">Order ID</th>
+                <th className="px-5 py-4">Customer</th>
+                <th className="px-5 py-4">Bag Type</th>
+                <th className="px-5 py-4">Configuration</th>
+                <th className="px-5 py-4">Qty</th>
+                <th className="px-5 py-4">Date</th>
+                <th className="px-5 py-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-700">
+            <tbody className="divide-y divide-stone-200">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="7"
-                    className="px-6 py-12 text-center text-zinc-500"
-                  >
-                    No orders found. Create your first order!
+                  <td colSpan="7" className="px-5 py-14 text-center text-sacimak-variant">
+                    No matching orders found yet.
                   </td>
                 </tr>
               ) : (
                 filteredOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="hover:bg-zinc-900/50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm font-mono text-zinc-300">
-                      {order.id}
+                  <tr key={order.id} className="bg-white/50 transition hover:bg-white">
+                    <td className="px-5 py-4 font-mono text-xs text-sacimak-variant">{order.id}</td>
+                    <td className="px-5 py-4">
+                      <p className="font-semibold text-sacimak-on-surface">{order.customerName}</p>
+                      <p className="text-xs text-sacimak-variant">{order.email}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-white">
-                        {order.customerName}
-                      </div>
-                      <div className="text-xs text-zinc-400">
-                        {order.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-bold uppercase">
+                    <td className="px-5 py-4">
+                      <span className="rounded-full border border-sacimak-primary/30 bg-sacimak-primary/10 px-3 py-1 text-xs font-semibold uppercase text-sacimak-primary">
                         {order.bagType}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-5 py-4 text-sacimak-variant">
                       {order.bagType === 'tote' ? (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-6 h-6 rounded border-2 border-zinc-600"
-                            style={{
-                              backgroundColor: order.config.sequinColor,
-                            }}
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className="h-4 w-4 rounded-full border border-stone-300"
+                            style={{ backgroundColor: order.config.sequinColor }}
                           />
-                          <span className="text-zinc-300">
-                            {order.config.sequinStyle}
-                          </span>
-                        </div>
+                          {order.config.sequinStyle}
+                        </span>
                       ) : (
-                        <div className="text-zinc-300">
-                          {order.config.frameColor} frame
-                        </div>
+                        <span className="capitalize">{order.config.frameColor} frame</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-white">
-                      {order.quantity}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-zinc-400">
-                      {formatDate(order.timestamp)}
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4 font-semibold text-sacimak-on-surface">{order.quantity}</td>
+                    <td className="px-5 py-4 text-xs text-sacimak-variant">{formatDate(order.timestamp)}</td>
+                    <td className="px-5 py-4">
                       <select
                         value={order.status}
-                        onChange={(e) =>
-                          updateOrderStatus(order.id, e.target.value)
-                        }
-                        className={`px-3 py-1 rounded-lg text-sm font-semibold border-2 cursor-pointer outline-none ${getStatusBadge(
+                        onChange={(event) => updateOrderStatus(order.id, event.target.value)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide outline-none ${getStatusStyle(
                           order.status
                         )}`}
                       >
@@ -272,7 +204,7 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
